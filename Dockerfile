@@ -6,7 +6,8 @@ RUN apk add --no-cache musl-dev
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
-RUN cargo build --release --locked --bin audiobookshelf-adapter && cp target/release/audiobookshelf-adapter /audiobookshelf-adapter
+RUN cargo build --release --locked --bin audiobookshelf-adapter \
+    && cp target/release/audiobookshelf-adapter /audiobookshelf-adapter
 
 FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
 COPY --from=build /audiobookshelf-adapter /audiobookshelf-adapter
