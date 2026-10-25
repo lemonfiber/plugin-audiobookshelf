@@ -15,7 +15,7 @@ path = "src/main.rs"
 
 [dependencies]
 async-trait = "0.1"
-base64 = "0.22"
+base64 = "0.23"
 lemonfiber-adapter-kit = { git = "https://github.com/lemonfiber/lemonfiber", rev = "e53e019495ceef10332794dc2c2ed718ef1eb5fa" }
 lemonfiber-contract = { git = "https://github.com/lemonfiber/lemonfiber", rev = "e53e019495ceef10332794dc2c2ed718ef1eb5fa" }
 lemonfiber-ports = { git = "https://github.com/lemonfiber/lemonfiber", rev = "e53e019495ceef10332794dc2c2ed718ef1eb5fa" }
