@@ -1,16 +1,16 @@
 {
-  "lemonfiber": "e53e019495ceef10332794dc2c2ed718ef1eb5fa",
+  "lemonfiber": "733a12fc8ca8bfaa654cb7fa0fe1538bde1f502c",
   "against": "recordings",
   "proofs": [
     {
-      "id": "media.serve/guarded",
-      "kind": "probe",
+      "id": "audiobookshelf.says-whether-it-is-claimed",
+      "kind": "proof",
       "outcome": "passed",
       "detail": ""
     },
     {
-      "id": "media.serve/catalogue",
-      "kind": "probe",
+      "id": "audiobookshelf.guarded",
+      "kind": "proof",
       "outcome": "passed",
       "detail": ""
     }
