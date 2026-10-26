@@ -46,6 +46,7 @@ listens     = 8080
 speaks      = ["owner.claim@1", "media.serve@1"]
 fronts      = "audiobookshelf"
 provides    = ["media.serve"]
+media_types = ["audiobooks", "podcasts"]
 upstream    = { username = { secret = "root-username" }, password = { secret = "root-password" } }
 
 [[secret]]
