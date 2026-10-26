@@ -24,6 +24,10 @@ updates:
       include: scope
     ignore:
       - dependency-name: "lemonfiber-*"
+      # reqwest and the core's crates hold base64 0.22, and cargo-deny refuses a
+      # second line of it, so base64 moves to a new line when they do.
+      - dependency-name: "base64"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
     groups:
       crates:
         patterns: ["*"]
