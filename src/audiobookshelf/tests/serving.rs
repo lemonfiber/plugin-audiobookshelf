@@ -1,7 +1,9 @@
 use lemonfiber_fixtures::http::{Answer, Fake};
 use lemonfiber_ports::http::Method;
 use lemonfiber_ports::media::Kind;
-use lemonfiber_ports::service::{Declaring as _, Fronted as _, Library as _, Upkeep as _};
+use lemonfiber_ports::service::{
+    Declaring as _, Encrypting as _, Fronted as _, Library as _, Upkeep as _,
+};
 
 use super::{
     asked, audiobookshelf, body_of, refused_saying, signed_in_and, unsupported, LIBRARIES,
@@ -136,5 +138,10 @@ async fn what_it_has_no_equivalent_for_is_unsupported_and_asks_nothing() {
     assert!(unsupported(audiobookshelf.trust_only("10.0.0.1").await));
     assert!(unsupported(audiobookshelf.restart().await));
     assert!(unsupported(audiobookshelf.declared().await));
+    assert!(unsupported(
+        audiobookshelf
+            .serve_tls("/config/internal.p12", "pin")
+            .await
+    ));
     assert!(fake.requests().is_empty());
 }

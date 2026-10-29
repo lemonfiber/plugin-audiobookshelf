@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use lemonfiber_ports::http::Method;
 use lemonfiber_ports::media::Kind;
 use lemonfiber_ports::service::{
-    Declared, Declaring, Failure, Fronted, Library, SeriesHeld, Upkeep,
+    Applied, Declared, Declaring, Encrypting, Failure, Fronted, Library, SeriesHeld, Upkeep,
 };
 use serde::Deserialize;
 
@@ -18,6 +18,8 @@ const NO_PROXIES: &str = "Audiobookshelf holds no list of addresses trusted to n
 const NO_RESTART: &str = "Audiobookshelf cannot be asked to start again";
 
 const NO_GUARD: &str = "Audiobookshelf serves no member through a guard of lemonfiber's";
+
+const NO_TLS: &str = "Audiobookshelf serves no internal TLS port";
 
 const AUTHORIZE: &str = "/api/authorize";
 
@@ -119,5 +121,12 @@ impl Fronted for Audiobookshelf {
 impl Declaring for Audiobookshelf {
     async fn declared(&self) -> Result<Declared, Failure> {
         Err(Self::unsupported(NO_GUARD))
+    }
+}
+
+#[async_trait]
+impl Encrypting for Audiobookshelf {
+    async fn serve_tls(&self, _path: &str, _pin: &str) -> Result<Applied, Failure> {
+        Err(Self::unsupported(NO_TLS))
     }
 }
