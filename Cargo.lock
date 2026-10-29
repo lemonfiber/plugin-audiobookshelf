@@ -34,7 +34,7 @@ version = "0.18.0"
 dependencies = [
  "async-trait",
  "axum",
- "base64 0.22.1",
+ "base64",
  "lemonfiber-adapter-kit",
  "lemonfiber-contract",
  "lemonfiber-fixtures",
@@ -95,12 +95,6 @@ dependencies = [
  "tower-layer",
  "tower-service",
 ]
-
-[[package]]
-name = "base64"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "base64"
@@ -396,7 +390,7 @@ version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddc03d96684f9226b8a787cdb71488417b53ab5ea8fdb1dac946cb9431cc8bff"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "bytes",
  "futures-channel",
  "futures-util",
@@ -732,7 +726,7 @@ version = "0.17.0"
 source = "git+https://github.com/lemonfiber/lemonfiber?rev=23d16d26f54af845163ff4b004be71bca3972939#23d16d26f54af845163ff4b004be71bca3972939"
 dependencies = [
  "async-trait",
- "base64 0.23.1",
+ "base64",
  "lemonfiber-error",
  "lemonfiber-manifest",
  "regex",
@@ -932,7 +926,7 @@ version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16a1cfa75cc186dd73d5818e510e042e40927bccc9c236b061cea97e1eb08029"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "bytes",
  "cookie",
  "cookie_store",
