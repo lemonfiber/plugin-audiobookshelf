@@ -2,6 +2,7 @@
 //! household is somebody `identity.source` names, and Audiobookshelf speaks for none of
 //! them, so everything asked for one member is unsupported.
 
+use lemonfiber_adapter_kit::picture;
 use std::collections::HashMap;
 
 use async_trait::async_trait;
@@ -27,8 +28,6 @@ const ONLINE: &str = "/api/users/online";
 const USERS: &str = "/api/users";
 
 const BY_TITLE: &str = "media.metadata.title";
-
-const PICTURE_PREFIX: &str = "image/";
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -196,14 +195,10 @@ impl Audiobookshelf {
                 .endpoint
                 .refused("Audiobookshelf would not answer the cover"));
         }
-        let Some(media_type) = fetched
-            .header("content-type")
-            .filter(|kind| kind.starts_with(PICTURE_PREFIX))
-            .map(str::to_owned)
-        else {
-            return Ok(None);
-        };
-        Ok(fetched.bytes.map(|bytes| Image { media_type, bytes }))
+        let served = fetched.header("content-type").map(str::to_owned);
+        Ok(fetched
+            .bytes
+            .and_then(|bytes| picture::image(served.as_deref(), bytes)))
     }
 
     async fn held(&self, most: u32) -> Result<Vec<Item>, Failure> {

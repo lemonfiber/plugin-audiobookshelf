@@ -140,7 +140,7 @@ async fn a_poster_is_its_cover_as_audiobookshelf_answered_it() {
         (
             Method::Get,
             "/cover",
-            Answer::served(200, "image/jpeg", "the-picture"),
+            Answer::served(200, "image/gif", "GIF89a-picture"),
         ),
         (Method::Get, "expanded=1", Answer::reply(200, BOOK)),
     ]);
@@ -151,8 +151,8 @@ async fn a_poster_is_its_cover_as_audiobookshelf_answered_it() {
             .ok()
             .flatten(),
         Some(Image {
-            media_type: "image/jpeg".to_owned(),
-            bytes: b"the-picture".to_vec(),
+            media_type: "image/gif".to_owned(),
+            bytes: b"GIF89a-picture".to_vec(),
         })
     );
     assert!(asked(&fake).contains(&(Method::Get, format!("/api/items/{ITEM}/cover"))));
@@ -167,7 +167,7 @@ async fn a_cover_it_refused_the_session_for_is_asked_again_once() {
             "/cover",
             vec![
                 Answer::reply(401, "Unauthorized"),
-                Answer::served(200, "image/png", "png"),
+                Answer::served(200, "image/webp", "RIFF0000WEBPVP8 "),
             ],
         ),
         (Method::Get, "expanded=1", vec![Answer::reply(200, BOOK)]),
@@ -176,7 +176,7 @@ async fn a_cover_it_refused_the_session_for_is_asked_again_once() {
         audiobookshelf(&fake)
             .picture(None, ITEM, Picture::Poster)
             .await,
-        Ok(Some(image)) if image.media_type == "image/png"
+        Ok(Some(image)) if image.media_type == "image/webp"
     ));
     assert_eq!(
         fake.requests()
@@ -193,6 +193,12 @@ async fn a_picture_it_does_not_hold_is_answered_as_none() {
     for cover in [
         Answer::reply(404, "Not Found"),
         Answer::served(200, "text/html", "<html>"),
+        Answer::served(
+            200,
+            "image/svg+xml",
+            r#"<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>"#,
+        ),
+        Answer::served(200, "image/png", "<html><script>alert(1)</script></html>"),
         Answer::reply(200, "no type"),
         Answer::served(200, "image/jpeg", oversized),
     ] {
