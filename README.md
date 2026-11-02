@@ -15,8 +15,9 @@ adapter this repository holds, which speaks lemonfiber's `owner.claim` and
 core's adapter kit, into the image `ghcr.io/lemonfiber/audiobookshelf-adapter`,
 published from every commit on `main` and from each tag the release train cuts.
 It makes Audiobookshelf's root account for the one lemonfiber mints before
-anybody else can, reads what its libraries hold and what is playing, scans its
-libraries again, mints and revokes its API keys and sets the origins a browser
+anybody else can, reads what its libraries hold and what is playing, adds an
+Audiobooks and a Podcasts library for the folders the stack files them in where
+no library reads them, scans its libraries again, mints and revokes its API keys and sets the origins a browser
 may read it from. lemonfiber reaches Audiobookshelf through this adapter alone.
 lemonfiber mints the root account's name and password and writes them into the
 adapter's `upstream.json`, and the adapter's claim makes Audiobookshelf's first

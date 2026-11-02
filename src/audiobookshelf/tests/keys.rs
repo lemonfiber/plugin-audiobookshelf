@@ -37,6 +37,13 @@ async fn the_keys_filed_under_a_name_are_unsupported_since_each_is_shown_once() 
 }
 
 #[tokio::test]
+async fn what_is_held_under_a_name_and_was_not_made_here_is_unsupported() {
+    let fake = Fake::silent();
+    assert!(unsupported(audiobookshelf(&fake).astray(APP).await));
+    assert!(fake.requests().is_empty());
+}
+
+#[tokio::test]
 async fn every_key_filed_under_a_name_is_dated_oldest_first() {
     let fake = signed_in_and(vec![(
         Method::Get,
