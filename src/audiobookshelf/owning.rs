@@ -3,7 +3,7 @@
 
 use async_trait::async_trait;
 use lemonfiber_ports::http::Method;
-use lemonfiber_ports::service::{Failure, Owner, Ownership};
+use lemonfiber_ports::service::{Claim, Failure, Owner, Ownership};
 use serde::Deserialize;
 
 use super::{Audiobookshelf, ME};
@@ -49,10 +49,10 @@ impl Ownership for Audiobookshelf {
         }
     }
 
-    async fn claim(&self) -> Result<Owner, Failure> {
+    async fn claim(&self) -> Result<Claim, Failure> {
         let held = self.owner().await?;
         if held != Owner::Open {
-            return Ok(held);
+            return Ok(Claim::Held(held));
         }
         let root = serde_json::json!({ "newRoot": self.root()? }).to_string();
         let response = self
@@ -60,11 +60,11 @@ impl Ownership for Audiobookshelf {
             .send(&self.request(Method::Post, INIT, Some(root), None))
             .await?;
         if response.is_success() {
-            return Ok(Owner::Ours);
+            return Ok(Claim::Held(Owner::Ours));
         }
         match self.owner().await? {
             Owner::Open => Err(self.endpoint.refusal(&response)),
-            held => Ok(held),
+            held => Ok(Claim::Held(held)),
         }
     }
 }

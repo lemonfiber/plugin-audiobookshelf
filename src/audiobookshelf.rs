@@ -9,6 +9,7 @@ use lemonfiber_ports::http::{Fetched, Http, Method, Request, Response, JSON};
 use lemonfiber_ports::service::Failure;
 use serde::Deserialize;
 
+mod furnishing;
 mod keys;
 mod owning;
 mod screening;
@@ -68,6 +69,16 @@ struct Libraries {
 #[derive(Deserialize)]
 struct LibraryHeld {
     id: String,
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    folders: Vec<FolderRead>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FolderRead {
+    full_path: String,
 }
 
 impl Audiobookshelf {
@@ -214,14 +225,18 @@ impl Audiobookshelf {
         self.endpoint.expect_success(&response)
     }
 
+    async fn shelved(&self) -> Result<Libraries, Failure> {
+        self.read(
+            LIBRARIES,
+            "the libraries Audiobookshelf holds could not be read",
+        )
+        .await
+    }
+
     async fn libraries(&self) -> Result<Vec<String>, Failure> {
-        let held: Libraries = self
-            .read(
-                LIBRARIES,
-                "the libraries Audiobookshelf holds could not be read",
-            )
-            .await?;
-        Ok(held
+        Ok(self
+            .shelved()
+            .await?
             .libraries
             .into_iter()
             .map(|library| library.id)

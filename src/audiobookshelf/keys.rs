@@ -7,7 +7,7 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine as _;
 use lemonfiber_adapter_kit::credential::spelled_as_a_key;
 use lemonfiber_ports::http::Method;
-use lemonfiber_ports::service::{AppKeys, Dated, Failure};
+use lemonfiber_ports::service::{AppKeys, Astray, Dated, Failure};
 use serde::Deserialize;
 
 use super::{an_id, Audiobookshelf, ME};
@@ -170,5 +170,9 @@ impl AppKeys for Audiobookshelf {
         }
         self.done(Method::Delete, &format!("{KEYS}/{}", claims.key_id), None)
             .await
+    }
+
+    async fn astray(&self, _app: &str) -> Result<Vec<Astray>, Failure> {
+        Err(Self::unsupported(SHOWN_ONCE))
     }
 }

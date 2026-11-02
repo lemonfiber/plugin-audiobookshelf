@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use lemonfiber_fixtures::http::{Answer, Fake};
 use lemonfiber_ports::http::Method;
-use lemonfiber_ports::service::{Failure, Owner, Ownership as _};
+use lemonfiber_ports::service::{Claim, Failure, Owner, Ownership as _};
 
 use super::{an_id, Audiobookshelf};
 
+mod furnishing;
 mod keys;
 mod screening;
 mod serving;
@@ -282,7 +283,10 @@ async fn a_claim_makes_the_minted_root_while_nobody_holds_it() {
         (Method::Get, "/status", Answer::reply(200, UNINITIALISED)),
         (Method::Post, "/init", Answer::reply(200, "OK")),
     ]);
-    assert_eq!(audiobookshelf(&fake).claim().await.ok(), Some(Owner::Ours));
+    assert_eq!(
+        audiobookshelf(&fake).claim().await.ok(),
+        Some(Claim::Held(Owner::Ours))
+    );
     assert_eq!(
         asked(&fake),
         [
@@ -304,7 +308,10 @@ async fn a_claim_changes_nothing_somebody_already_holds() {
         (Method::Get, "/status", Answer::reply(200, INITIALISED)),
         (Method::Get, "/api/me", Answer::reply(200, "{}")),
     ]);
-    assert_eq!(audiobookshelf(&fake).claim().await.ok(), Some(Owner::Ours));
+    assert_eq!(
+        audiobookshelf(&fake).claim().await.ok(),
+        Some(Claim::Held(Owner::Ours))
+    );
     assert!(!fake.asked_for("/init"));
 }
 
@@ -328,7 +335,7 @@ async fn a_claim_another_first_run_beat_answers_who_holds_it_now() {
     ]);
     assert_eq!(
         audiobookshelf(&fake).claim().await.ok(),
-        Some(Owner::Theirs)
+        Some(Claim::Held(Owner::Theirs))
     );
 }
 
