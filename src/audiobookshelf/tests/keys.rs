@@ -3,6 +3,7 @@ use base64::Engine as _;
 use lemonfiber_fixtures::http::{Answer, Fake};
 use lemonfiber_ports::http::Method;
 use lemonfiber_ports::service::{AppKeys as _, Dated, Failure};
+use lemonfiber_ports::Instant;
 
 use super::{
     asked, audiobookshelf, body_of, refused_saying, signed_in_and, unsupported, SIGNED_IN,
@@ -54,11 +55,11 @@ async fn every_key_filed_under_a_name_is_dated_oldest_first() {
         audiobookshelf(&fake).dated(APP).await.ok(),
         Some(vec![
             Dated {
-                created: Some("2026-10-25T03:04:00.000Z".to_owned()),
-                last_used: Some("2026-10-25T03:06:00.000Z".to_owned()),
+                created: Instant::from_service_text("2026-10-25T03:04:00.000Z"),
+                last_used: Instant::from_service_text("2026-10-25T03:06:00.000Z"),
             },
             Dated {
-                created: Some("2026-10-25T03:05:00.000Z".to_owned()),
+                created: Instant::from_service_text("2026-10-25T03:05:00.000Z"),
                 last_used: None,
             },
         ])

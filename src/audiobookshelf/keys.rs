@@ -7,7 +7,8 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine as _;
 use lemonfiber_adapter_kit::credential::spelled_as_a_key;
 use lemonfiber_ports::http::Method;
-use lemonfiber_ports::service::{AppKeys, Astray, Dated, Failure};
+use lemonfiber_ports::service::{AppKeys, Astray, Dated, Failure, OutsideAccount, OutsideServer};
+use lemonfiber_ports::Instant;
 use serde::Deserialize;
 
 use super::{an_id, Audiobookshelf, ME};
@@ -15,6 +16,8 @@ use super::{an_id, Audiobookshelf, ME};
 const KEYS: &str = "/api/api-keys";
 
 const SHOWN_ONCE: &str = "Audiobookshelf shows a key only once, when it is minted";
+
+const NO_OUTSIDE: &str = "Audiobookshelf holds its own accounts, and no outside service holds them";
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -101,8 +104,14 @@ impl AppKeys for Audiobookshelf {
             .await?
             .into_iter()
             .map(|key| Dated {
-                created: key.created_at,
-                last_used: key.last_used_at,
+                created: key
+                    .created_at
+                    .as_deref()
+                    .and_then(Instant::from_service_text),
+                last_used: key
+                    .last_used_at
+                    .as_deref()
+                    .and_then(Instant::from_service_text),
             })
             .collect())
     }
@@ -174,5 +183,13 @@ impl AppKeys for Audiobookshelf {
 
     async fn astray(&self, _app: &str) -> Result<Vec<Astray>, Failure> {
         Err(Self::unsupported(SHOWN_ONCE))
+    }
+
+    async fn account(&self, _app: &str) -> Result<OutsideAccount, Failure> {
+        Err(Self::unsupported(NO_OUTSIDE))
+    }
+
+    async fn listed_as(&self) -> Result<OutsideServer, Failure> {
+        Err(Self::unsupported(NO_OUTSIDE))
     }
 }

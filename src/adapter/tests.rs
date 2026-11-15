@@ -126,13 +126,21 @@ async fn what_audiobookshelf_has_no_equivalent_for_and_whatever_names_a_member_i
         ("picture", r#"{"member":"m","id":"i","which":"poster"}"#),
         ("holdings", r#"{"member":"m","most":1}"#),
         ("playing", r#"{"member":"m"}"#),
-        ("has_item", r#"{"kind":"movies","term":"t"}"#),
         ("series_held", r#"{"most":1}"#),
         ("filed_as", r#"{"app":"a"}"#),
+        ("account", r#"{"app":"a"}"#),
+        ("listed_as", "{}"),
         ("known_proxies", "{}"),
         ("trust_only", r#"{"address":"10.0.0.1"}"#),
         ("restart", "{}"),
         ("declared", "{}"),
+        (
+            "events",
+            r#"{"address":"https://lemonfiber:8443/events","pin":"p","key":"k","every":60}"#,
+        ),
+        ("channels", r#"{"member":"m"}"#),
+        ("tune", r#"{"member":"m","channel":"c"}"#),
+        ("untune", r#"{"closes_by":"c"}"#),
     ] {
         let fake = Fake::silent();
         let (status, body) = answered_by(
@@ -150,6 +158,21 @@ async fn what_audiobookshelf_has_no_equivalent_for_and_whatever_names_a_member_i
         );
         assert!(fake.requests().is_empty(), "{operation}");
     }
+}
+
+#[tokio::test]
+async fn who_claimed_it_is_unsupported_since_its_own_minted_root_account_did() {
+    let fake = Fake::silent();
+    let (_, body) = answered_by(
+        &fake,
+        "POST",
+        "/lemonfiber/owner.claim/v1/claimed_by",
+        Some(&a_key()),
+        "{}",
+    )
+    .await;
+    assert_eq!(kind_of(&body), Some(serde_json::json!("unsupported")));
+    assert!(fake.requests().is_empty());
 }
 
 #[tokio::test]
