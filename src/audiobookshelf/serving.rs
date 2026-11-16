@@ -2,10 +2,12 @@
 //! a browser may read it from. What it has no equivalent of is unsupported.
 
 use async_trait::async_trait;
+use lemonfiber_adapter_kit::endpoint::form_encoded;
 use lemonfiber_ports::http::Method;
-use lemonfiber_ports::media::Kind;
+use lemonfiber_ports::media::TitleKind;
 use lemonfiber_ports::service::{
-    Applied, Declared, Declaring, Encrypting, Failure, Fronted, Library, SeriesHeld, Upkeep,
+    Allowing, Applied, Channel, Declared, Declaring, Encrypting, Failure, Fronted, Heard, Library,
+    Recounting, SeriesHeld, Tuned, Tuning, Upkeep,
 };
 use serde::Deserialize;
 
@@ -27,6 +29,49 @@ const SETTINGS: &str = "/api/settings";
 
 const WILDCARD: char = '*';
 
+const NO_EVENTS: &str = "Audiobookshelf tells nobody what it adds or what goes wrong";
+
+const NO_LIVE_TV: &str = "Audiobookshelf has no live TV";
+
+#[derive(Deserialize)]
+struct Found {
+    #[serde(default)]
+    book: Vec<Hit>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Hit {
+    library_item: Titled,
+}
+
+#[derive(Deserialize)]
+struct Titled {
+    media: Media,
+}
+
+#[derive(Deserialize)]
+struct Media {
+    metadata: Metadata,
+}
+
+#[derive(Deserialize)]
+struct Metadata {
+    #[serde(default)]
+    title: Option<String>,
+}
+
+impl Hit {
+    fn titled(&self, needle: &str) -> bool {
+        self.library_item
+            .media
+            .metadata
+            .title
+            .as_deref()
+            .is_some_and(|title| title.to_lowercase().contains(needle))
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Settled {
@@ -42,8 +87,24 @@ struct Settings {
 
 #[async_trait]
 impl Library for Audiobookshelf {
-    async fn has_item(&self, _kind: Kind, _term: &str) -> Result<bool, Failure> {
-        Err(Self::unsupported(NO_KINDS))
+    async fn has_item(&self, kind: TitleKind, term: &str) -> Result<bool, Failure> {
+        if kind != TitleKind::Books {
+            return Ok(false);
+        }
+        let needle = term.to_lowercase();
+        let asked = form_encoded(&[("q", term)]);
+        for library in self.libraries().await? {
+            let found: Found = self
+                .read(
+                    &format!("{LIBRARIES}/{library}/search?{asked}"),
+                    "the books Audiobookshelf holds could not be read",
+                )
+                .await?;
+            if found.book.iter().any(|hit| hit.titled(&needle)) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
 
     async fn rescan(&self) -> Result<(), Failure> {
@@ -92,28 +153,73 @@ impl Fronted for Audiobookshelf {
     }
 
     async fn allow_only(&self, origin: &str) -> Result<(), Failure> {
-        if origin.trim().is_empty() || origin.contains(WILDCARD) {
+        self.allowing(&[origin.to_owned()]).await
+    }
+
+    async fn restart(&self) -> Result<(), Failure> {
+        Err(Self::unsupported(NO_RESTART))
+    }
+}
+
+impl Audiobookshelf {
+    async fn allowing(&self, origins: &[String]) -> Result<(), Failure> {
+        if origins.is_empty()
+            || origins
+                .iter()
+                .any(|origin| origin.trim().is_empty() || origin.contains(WILDCARD))
+        {
             return Err(self
                 .endpoint
-                .refused("an origin allowed alone names one origin, never a wildcard"));
+                .refused("each origin allowed names one origin, never a wildcard"));
         }
-        let written = serde_json::json!({ "allowedOrigins": [origin] }).to_string();
+        let written = serde_json::json!({ "allowedOrigins": origins }).to_string();
         let response = self.as_root(Method::Patch, SETTINGS, Some(written)).await?;
         let settled: Settled = self.endpoint.decode(
             &response,
             "the origins Audiobookshelf allows could not be read back",
         )?;
-        if settled.server_settings.allowed_origins == [origin] {
+        if settled.server_settings.allowed_origins == origins {
             Ok(())
         } else {
             Err(self
                 .endpoint
-                .refused("Audiobookshelf read back other origins than the one written"))
+                .refused("Audiobookshelf read back other origins than those written"))
         }
     }
+}
 
-    async fn restart(&self) -> Result<(), Failure> {
-        Err(Self::unsupported(NO_RESTART))
+#[async_trait]
+impl Allowing for Audiobookshelf {
+    async fn allow_origins(&self, origins: &[String]) -> Result<(), Failure> {
+        self.allowing(origins).await
+    }
+}
+
+#[async_trait]
+impl Recounting for Audiobookshelf {
+    async fn events(
+        &self,
+        _address: Option<&str>,
+        _pin: Option<&str>,
+        _key: Option<&str>,
+        _every: Option<u32>,
+    ) -> Result<Option<Heard>, Failure> {
+        Err(Self::unsupported(NO_EVENTS))
+    }
+}
+
+#[async_trait]
+impl Tuning for Audiobookshelf {
+    async fn channels(&self, _member: &str) -> Result<Vec<Channel>, Failure> {
+        Err(Self::unsupported(NO_LIVE_TV))
+    }
+
+    async fn tune(&self, _member: &str, _channel: &str) -> Result<Option<Tuned>, Failure> {
+        Err(Self::unsupported(NO_LIVE_TV))
+    }
+
+    async fn untune(&self, _closes_by: &str) -> Result<(), Failure> {
+        Err(Self::unsupported(NO_LIVE_TV))
     }
 }
 

@@ -140,6 +140,7 @@ impl Audiobookshelf {
             headers,
             body,
             pinned: None,
+            deadline: None,
         }
     }
 

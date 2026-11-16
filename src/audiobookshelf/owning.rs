@@ -12,6 +12,9 @@ const STATUS: &str = "/status";
 
 const INIT: &str = "/init";
 
+const CLAIMED_ITSELF: &str =
+    "Audiobookshelf is claimed with the root account lemonfiber minted for this plugin, which no outside service holds";
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Status {
@@ -66,5 +69,9 @@ impl Ownership for Audiobookshelf {
             Owner::Open => Err(self.endpoint.refusal(&response)),
             held => Ok(Claim::Held(held)),
         }
+    }
+
+    async fn claimed_by(&self) -> Result<Option<String>, Failure> {
+        Err(Self::unsupported(CLAIMED_ITSELF))
     }
 }

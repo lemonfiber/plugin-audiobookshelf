@@ -1,8 +1,9 @@
 use lemonfiber_fixtures::http::{Answer, Fake};
 use lemonfiber_ports::http::Method;
-use lemonfiber_ports::media::Kind;
+use lemonfiber_ports::media::TitleKind;
 use lemonfiber_ports::service::{
-    Declaring as _, Encrypting as _, Fronted as _, Library as _, Upkeep as _,
+    Allowing as _, Declaring as _, Encrypting as _, Fronted as _, Library as _, Recounting as _,
+    Tuning as _, Upkeep as _,
 };
 
 use super::{
@@ -130,9 +131,6 @@ async fn an_empty_origin_or_a_wildcard_is_refused_before_anything_is_written() {
 async fn what_it_has_no_equivalent_for_is_unsupported_and_asks_nothing() {
     let fake = Fake::silent();
     let audiobookshelf = audiobookshelf(&fake);
-    assert!(unsupported(
-        audiobookshelf.has_item(Kind::Movies, "t").await
-    ));
     assert!(unsupported(audiobookshelf.series_held(10).await));
     assert!(unsupported(audiobookshelf.known_proxies().await));
     assert!(unsupported(audiobookshelf.trust_only("10.0.0.1").await));
@@ -143,5 +141,138 @@ async fn what_it_has_no_equivalent_for_is_unsupported_and_asks_nothing() {
             .serve_tls("/config/internal.p12", "pin")
             .await
     ));
+    assert!(unsupported(
+        audiobookshelf
+            .events(
+                Some("https://lemonfiber/events"),
+                Some("p"),
+                Some("k"),
+                Some(60)
+            )
+            .await
+    ));
+    assert!(unsupported(audiobookshelf.channels("m").await));
+    assert!(unsupported(audiobookshelf.tune("m", "c").await));
+    assert!(unsupported(audiobookshelf.untune("c").await));
     assert!(fake.requests().is_empty());
+}
+
+#[tokio::test]
+async fn every_origin_asked_for_is_written_and_held_to_being_kept() {
+    let origins = [ORIGIN.to_owned(), "https://console.example".to_owned()];
+    let fake = signed_in_and(vec![(
+        Method::Patch,
+        "/api/settings",
+        Answer::reply(
+            200,
+            r#"{"serverSettings":{"allowedOrigins":["https://watch.example","https://console.example"]}}"#,
+        ),
+    )]);
+    assert!(audiobookshelf(&fake).allow_origins(&origins).await.is_ok());
+    assert_eq!(
+        body_of(&fake, "/api/settings"),
+        Some(serde_json::json!({ "allowedOrigins": origins }))
+    );
+    let kept_one = signed_in_and(vec![(
+        Method::Patch,
+        "/api/settings",
+        Answer::reply(
+            200,
+            r#"{"serverSettings":{"allowedOrigins":["https://watch.example"]}}"#,
+        ),
+    )]);
+    assert!(refused_saying(
+        audiobookshelf(&kept_one).allow_origins(&origins).await,
+        "other origins"
+    ));
+}
+
+#[tokio::test]
+async fn no_origin_or_a_wildcard_among_them_is_refused_before_anything_is_written() {
+    for origins in [vec![], vec![ORIGIN.to_owned(), "*".to_owned()]] {
+        let fake = Fake::silent();
+        assert!(refused_saying(
+            audiobookshelf(&fake).allow_origins(&origins).await,
+            "never a wildcard"
+        ));
+        assert!(fake.requests().is_empty());
+    }
+}
+
+#[tokio::test]
+async fn a_book_whose_title_holds_the_term_is_in_a_library() {
+    let fake = signed_in_and(vec![
+        (
+            Method::Get,
+            "/api/libraries/491da074-347b-4680-8239-2a230e4cdd9e/search",
+            Answer::reply(200, r#"{"book":[]}"#),
+        ),
+        (
+            Method::Get,
+            "/api/libraries/591da074-347b-4680-8239-2a230e4cdd9e/search",
+            Answer::reply(
+                200,
+                r#"{"book":[{"libraryItem":{"media":{"metadata":{"title":"The Hobbit"}}}},{"libraryItem":{"media":{"metadata":{}}}}]}"#,
+            ),
+        ),
+        (Method::Get, "/api/libraries", Answer::reply(200, LIBRARIES)),
+    ]);
+    let audiobookshelf = audiobookshelf(&fake);
+    assert_eq!(
+        audiobookshelf
+            .has_item(TitleKind::Books, "HOBBIT")
+            .await
+            .ok(),
+        Some(true)
+    );
+    assert_eq!(
+        audiobookshelf.has_item(TitleKind::Books, "Dune").await.ok(),
+        Some(false)
+    );
+    assert!(fake.requests().iter().any(|one| one
+        .url
+        .ends_with("/api/libraries/591da074-347b-4680-8239-2a230e4cdd9e/search?q=HOBBIT")));
+    assert!(!fake
+        .requests()
+        .iter()
+        .any(|one| one.url.contains("not/an-id")));
+}
+
+#[tokio::test]
+async fn nothing_but_books_is_in_a_library_and_nothing_is_asked_for_it() {
+    let fake = Fake::silent();
+    for kind in [TitleKind::Tv, TitleKind::Movies, TitleKind::Music] {
+        assert_eq!(
+            audiobookshelf(&fake).has_item(kind, "t").await.ok(),
+            Some(false)
+        );
+    }
+    assert!(fake.requests().is_empty());
+}
+
+#[tokio::test]
+async fn books_it_cannot_read_leave_it_unable_to_say() {
+    let fake = signed_in_and(vec![
+        (Method::Get, "/search", Answer::reply(200, "{")),
+        (Method::Get, "/api/libraries", Answer::reply(200, LIBRARIES)),
+    ]);
+    assert!(refused_saying(
+        audiobookshelf(&fake).has_item(TitleKind::Books, "t").await,
+        "books Audiobookshelf holds could not be read"
+    ));
+}
+
+#[tokio::test]
+async fn origins_it_cannot_read_back_are_refused() {
+    let fake = signed_in_and(vec![(
+        Method::Patch,
+        "/api/settings",
+        Answer::reply(200, "{"),
+    )]);
+    assert!(refused_saying(
+        audiobookshelf(&fake)
+            .allow_origins(&[ORIGIN.to_owned()])
+            .await,
+        "could not be read back"
+    ));
 }
