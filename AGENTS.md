@@ -44,9 +44,10 @@ adapter's answers.
   `unsupported`, as does everything else Audiobookshelf cannot do (`ARCH-R334`).
 - **The core's crates move with the train.** The `rev` in `Cargo.toml` is the
   core commit `targets.toml` names, the same for every `lemonfiber-*` crate.
-- **Moving Audiobookshelf's digest** means recording every response again against
-  the new image in the same change, moving `RELEASE` and `DIGEST` in
-  `src/adapter.rs` with it, and committing the `proofs.json` the checks write.
+- **Moving Audiobookshelf's digest** means recording every response again
+  against the new image in the same change, moving `RELEASE` in `src/adapter.rs`
+  with it (`build.rs` reads `DIGEST` from `plugin.toml`, the digest's one home),
+  and committing the `proofs.json` the checks write.
 
 ## Checks
 
