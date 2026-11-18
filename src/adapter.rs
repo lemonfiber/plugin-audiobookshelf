@@ -14,9 +14,6 @@ pub const ADDRESS: &str = "http://audiobookshelf:80";
 /// The upstream this adapter fronts, as its project names itself.
 pub const UPSTREAM: &str = "Audiobookshelf";
 
-/// The Audiobookshelf release this adapter's recordings were taken from.
-pub const RELEASE: &str = "2.37.1";
-
 include!(concat!(env!("OUT_DIR"), "/fronted.rs"));
 
 /// What this adapter says it is: the contracts it speaks and the release it supports.
