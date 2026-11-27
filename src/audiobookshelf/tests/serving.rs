@@ -152,6 +152,7 @@ async fn what_it_has_no_equivalent_for_is_unsupported_and_asks_nothing() {
             .await
     ));
     assert!(unsupported(audiobookshelf.channels("m").await));
+    assert!(unsupported(audiobookshelf.guide("m", 12).await));
     assert!(unsupported(audiobookshelf.tune("m", "c").await));
     assert!(unsupported(audiobookshelf.untune("c").await));
     assert!(fake.requests().is_empty());
@@ -236,6 +237,56 @@ async fn a_book_whose_title_holds_the_term_is_in_a_library() {
         .requests()
         .iter()
         .any(|one| one.url.contains("not/an-id")));
+}
+
+#[tokio::test]
+async fn an_audiobook_is_found_among_the_books_and_a_podcast_among_the_podcasts() {
+    let fake = signed_in_and(vec![
+        (
+            Method::Get,
+            "/api/libraries/491da074-347b-4680-8239-2a230e4cdd9e/search",
+            Answer::reply(
+                200,
+                r#"{"podcast":[{"libraryItem":{"media":{"metadata":{"title":"Darknet Diaries"}}}}]}"#,
+            ),
+        ),
+        (
+            Method::Get,
+            "/api/libraries/591da074-347b-4680-8239-2a230e4cdd9e/search",
+            Answer::reply(
+                200,
+                r#"{"book":[{"libraryItem":{"media":{"metadata":{"title":"The Hobbit"}}}}]}"#,
+            ),
+        ),
+        (Method::Get, "/api/libraries", Answer::reply(200, LIBRARIES)),
+    ]);
+    let audiobookshelf = audiobookshelf(&fake);
+    for (kind, term, held) in [
+        (TitleKind::Audiobooks, "hobbit", true),
+        (TitleKind::Audiobooks, "darknet", false),
+        (TitleKind::Podcasts, "darknet", true),
+        (TitleKind::Podcasts, "hobbit", false),
+    ] {
+        assert_eq!(
+            audiobookshelf.has_item(kind, term).await.ok(),
+            Some(held),
+            "{kind:?} {term}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn podcasts_it_cannot_read_leave_it_unable_to_say() {
+    let fake = signed_in_and(vec![
+        (Method::Get, "/search", Answer::reply(200, "{")),
+        (Method::Get, "/api/libraries", Answer::reply(200, LIBRARIES)),
+    ]);
+    assert!(refused_saying(
+        audiobookshelf(&fake)
+            .has_item(TitleKind::Podcasts, "t")
+            .await,
+        "podcasts Audiobookshelf holds could not be read"
+    ));
 }
 
 #[tokio::test]
