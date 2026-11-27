@@ -7,7 +7,7 @@ use lemonfiber_ports::http::Method;
 use lemonfiber_ports::media::TitleKind;
 use lemonfiber_ports::service::{
     Allowing, Applied, Channel, Declared, Declaring, Encrypting, Failure, Fronted, Heard, Library,
-    Recounting, SeriesHeld, Tuned, Tuning, Upkeep,
+    Listing, Recounting, SeriesHeld, Tuned, Tuning, Upkeep,
 };
 use serde::Deserialize;
 
@@ -37,6 +37,8 @@ const NO_LIVE_TV: &str = "Audiobookshelf has no live TV";
 struct Found {
     #[serde(default)]
     book: Vec<Hit>,
+    #[serde(default)]
+    podcast: Vec<Hit>,
 }
 
 #[derive(Deserialize)]
@@ -88,19 +90,23 @@ struct Settings {
 #[async_trait]
 impl Library for Audiobookshelf {
     async fn has_item(&self, kind: TitleKind, term: &str) -> Result<bool, Failure> {
-        if kind != TitleKind::Books {
-            return Ok(false);
-        }
+        let podcasts = match kind {
+            TitleKind::Audiobooks | TitleKind::Books => false,
+            TitleKind::Podcasts => true,
+            TitleKind::Tv | TitleKind::Movies | TitleKind::Music => return Ok(false),
+        };
         let needle = term.to_lowercase();
         let asked = form_encoded(&[("q", term)]);
+        let unread = format!(
+            "the {} Audiobookshelf holds could not be read",
+            kind.media_type()
+        );
         for library in self.libraries().await? {
             let found: Found = self
-                .read(
-                    &format!("{LIBRARIES}/{library}/search?{asked}"),
-                    "the books Audiobookshelf holds could not be read",
-                )
+                .read(&format!("{LIBRARIES}/{library}/search?{asked}"), &unread)
                 .await?;
-            if found.book.iter().any(|hit| hit.titled(&needle)) {
+            let hits = if podcasts { found.podcast } else { found.book };
+            if hits.iter().any(|hit| hit.titled(&needle)) {
                 return Ok(true);
             }
         }
@@ -211,6 +217,10 @@ impl Recounting for Audiobookshelf {
 #[async_trait]
 impl Tuning for Audiobookshelf {
     async fn channels(&self, _member: &str) -> Result<Vec<Channel>, Failure> {
+        Err(Self::unsupported(NO_LIVE_TV))
+    }
+
+    async fn guide(&self, _member: &str, _hours: u32) -> Result<Vec<Listing>, Failure> {
         Err(Self::unsupported(NO_LIVE_TV))
     }
 
